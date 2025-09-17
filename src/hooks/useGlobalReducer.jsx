@@ -1,24 +1,39 @@
-// Import necessary hooks and functions from React.
-import { useContext, useReducer, createContext } from "react";
-import storeReducer, { initialStore } from "../store"  // Import the reducer and the initial state.
+import React, { useReducer, createContext } from "react";
+import { initialStore, actions } from "../store";
 
-// Create a context to hold the global state of the application
-// We will call this global state the "store" to avoid confusion while using local states
-const StoreContext = createContext()
+export const Context = createContext(null);
 
-// Define a provider component that encapsulates the store and warps it in a context provider to 
-// broadcast the information throught all the app pages and components.
-export function StoreProvider({ children }) {
-    // Initialize reducer with the initial state.
-    const [store, dispatch] = useReducer(storeReducer, initialStore())
-    // Provide the store and dispatch method to all child components.
-    return <StoreContext.Provider value={{ store, dispatch }}>
-        {children}
-    </StoreContext.Provider>
-}
+const reducer = (state, action) => {
+  switch (action.type) {
+    case actions.SET_CONTACTS:
+      return { ...state, contacts: action.payload };
 
-// Custom hook to access the global state and dispatch function.
-export default function useGlobalReducer() {
-    const { dispatch, store } = useContext(StoreContext)
-    return { dispatch, store };
-}
+    case actions.ADD_CONTACT:
+      // agrega al final
+      return { ...state, contacts: [...state.contacts, action.payload] };
+
+    case actions.DELETE_CONTACT:
+      // elimina por id
+      return {
+        ...state,
+        contacts: state.contacts.filter((c) => String(c.id) !== String(action.payload)),
+      };
+
+    case actions.UPDATE_CONTACT:
+      // reemplaza el contacto por id
+      return {
+        ...state,
+        contacts: state.contacts.map((c) =>
+          String(c.id) === String(action.payload.id) ? action.payload : c
+        ),
+      };
+
+    default:
+      return state;
+  }
+};
+
+export const StoreProvider = ({ children }) => {
+  const [store, dispatch] = useReducer(reducer, initialStore);
+  return <Context.Provider value={{ store, dispatch }}>{children}</Context.Provider>;
+};
